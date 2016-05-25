@@ -213,7 +213,7 @@ If Not File(Home(1)+"foxcodeplus.ini")
 Endif
 
 Use (_Foxcode) Alias ___chkFoxcodeVersion In 0 Shared Again
-Select ___chkFoxcodeVersion 
+Select ___chkFoxcodeVersion
 
 Locate For "foxcodeplus" $ Lower(Data)
 If Found()
@@ -237,6 +237,25 @@ Set Console On
 *- Definicao do menu "Error List" no menu "View" do VFP
 Define Bar 2 Of _MVIEW Prompt "\<Error List" Message "Show Error List at write-time" Key Alt+K,"Alt+K" Picture Home(1)+"foxcodeplus\images\error_list_menu.bmp" Skip For Type("_screen.foxcodeplus.EditorSource")<>"N"
 On Selection Bar 2 Of _MVIEW _Screen.FoxCodePlus.showerrorlist()
+
+
+** Funções para o On Key Label
+Function fcp_OnDot
+	If Type("_Screen.FoxCodePlus") == "O" .And. Not Isnull(_Screen.FoxCodePlus) Then
+		_Screen.FoxCodePlus.GetDot()
+	Else
+		Keyboard "." Plain
+	Endif
+Endfunc
+
+Function fcp_OnEqual
+	If Type("_Screen.FoxCodePlus") == "O" .And. Not Isnull(_Screen.FoxCodePlus) Then
+		_Screen.FoxCodePlus.GetEqual()
+	Else
+		Keyboard "=" Plain
+	Endif
+Endfunc
+
 
 
 
@@ -372,8 +391,8 @@ Define Class FoxCodePlusMain As Custom
 		*this.ToolBarProcInfo.show()
 
 		*- configuro as teclas abaixo para interagir com o IntelliSense
-		On Key Label "." _Screen.FoxCodePlus.GetDot()
-		On Key Label "=" _Screen.FoxCodePlus.GetEqual()
+		On Key Label "." fcp_OnDot()
+		On Key Label "=" fcp_OnEqual()
 
 
 		*- comandos sem IntelliSense plus porque usam o intelisense padrao
@@ -875,9 +894,11 @@ Define Class FoxCodePlusMain As Custom
 		This.EditorHwnd = _wontop()
 
 		*- se troquei de editor e o IntelliSense esta aberto deve fecha-lo
-		If This.EditorHwnd <> lnOldEditorHwnd
-			If This.IntelliSense.Showed
-				This.IntelliSense.Hide()
+		If Not Isnull(This.IntelliSense) Then
+			If This.EditorHwnd <> lnOldEditorHwnd
+				If This.IntelliSense.Showed
+					This.IntelliSense.Hide()
+				Endif
 			Endif
 		Endif
 
@@ -1175,7 +1196,6 @@ Define Class FoxCodePlusMain As Custom
 			lcLastWord = lcText
 		Endif
 		This.LastWord = Getwordnum(lcLastWord,Getwordcount(lcLastWord))
-
 		If Alltrim(Lower(This.LastWord)) == Alltrim(Lower(lcNewWord))		&&- nao prossigo se o item digitado é exatamente igual ao selecionado.
 			This.IntelliSense.Hide()
 			If plnKeyAscii <> 9
@@ -4652,6 +4672,11 @@ Define Class FoxCodePlusMain As Custom
 		llReturn = .T.
 		laControl[1] = .Null.
 
+		If Isnull(This.IntelliSense)
+			This.IntelliSense = Newobject("FoxCodePlusIntelliSense","FoxCodePlusIntelliSense.vcx")
+		Endif
+
+
 		*- verifico em qual lugar do vfp estou acionando o IntelliSense
 		If Not This.SetWontop()
 
@@ -4722,8 +4747,9 @@ Define Class FoxCodePlusMain As Custom
 					Otherwise
 
 				Endcase
-			Else
-				Keyboard "." Plain
+			ELSE
+				_EdInsert(This.EditorHwnd, ".", 1)
+				*Keyboard "." Plain
 			Endif
 
 			llReturn = .F.
@@ -5519,6 +5545,11 @@ Define Class FoxCodePlusMain As Custom
 		loControl = .Null.
 		This.LoadScriptBoolean = .F.
 
+
+		If Isnull(This.IntelliSense)
+			This.IntelliSense = Newobject("FoxCodePlusIntelliSense","FoxCodePlusIntelliSense.vcx")
+		Endif
+
 		*- verifico em qual lugar do vfp estou acionando o IntelliSense
 		If Not This.SetWontop("00//01//08//10//12")
 			*- verifico se é um objeto do vfp
@@ -5627,11 +5658,13 @@ Define Class FoxCodePlusMain As Custom
 					_EdInsert(This.EditorHwnd, "=", 1)
 
 					Keyboard " "
-				Else
-					Keyboard "=" Plain
+				ELSE
+					_EdInsert(This.EditorHwnd, "=", 1)
+*					Keyboard "=" Plain
 				Endif
-			Else
-				Keyboard "=" Plain
+			ELSE
+				_EdInsert(This.EditorHwnd, "=", 1)
+*				Keyboard "=" Plain
 			Endif
 		Endif
 
@@ -6788,9 +6821,9 @@ Define Class FoxCodePlusMain As Custom
 
 				lcError = "**-------------------------------------------" + CRLF + ;
 					"A FoxcodePlus error has occured. Press CTRL+C to copy this error or send the file foxcodeplus.err to the author. " + CRLF + ;
-				"" + CRLF + ;
+					"" + CRLF + ;
 					"Line contents: " + Message(1) + CRLF + ;
-				"OS version: "+ Os(1) + CRLF + ;
+					"OS version: "+ Os(1) + CRLF + ;
 					"Wontop: "+ Wontop() + CRLF + ;
 					"Localization: " + Iif(Empty(lcLevelError), "UNKNOWN", lcLevelError) + CRLF + ;
 					"Method: " + plcMethod + CRLF + ;
